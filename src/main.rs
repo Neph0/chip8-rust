@@ -1,11 +1,8 @@
-#![allow(unused_mut)] // FIXME
-#![allow(unused_variables)]
-
 use std::env;
 use std::process;
 
-mod graphicsManager;
-mod inputsManager;
+mod graphics_manager;
+mod inputs_manager;
 mod chip;
 
 const ERROR_INVALID_ARGUMENTS: i32 = 0x0001;
@@ -23,8 +20,8 @@ fn main() {
         display_usage_and_exit();
     }
 
-    let mut graphicsManager = graphicsManager::GraphicsManager::new();
-    let mut inputsManager = inputsManager::InputsManager::new();
+    let graphics_manager = graphics_manager::GraphicsManager::new();
+    let _inputs_manager = inputs_manager::InputsManager::new();
 
     let mut chip = chip::Chip::new();
     let result = chip.load_game(&args[1]);
@@ -36,10 +33,10 @@ fn main() {
     loop {
         chip.emulate_cycle();
         if chip.draw_flag != 0 {
-            graphicsManager.drawGraphics(chip.graphics);
+            graphics_manager.draw_graphics(chip.graphics);
         }
 
-        //chip.set_keys(inputsManager.getInputs());
+        //chip.set_keys(inputs_manager.get_inputs());
 
         if chip.exit_flag == 1 {
             break;

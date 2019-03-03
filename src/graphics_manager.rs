@@ -9,21 +9,20 @@ pub struct GraphicsManager {
 
 impl GraphicsManager {
     pub fn new() -> GraphicsManager {
-        let mut graphicsManager = GraphicsManager {
+        let mut graphics_manager = GraphicsManager {
             events_loop: glutin::EventsLoop::new(),
             display: None,
         };
         let window = glutin::WindowBuilder::new();
         let context = glutin::ContextBuilder::new();
-        graphicsManager.display = Some(glium::Display::new(window,
+        graphics_manager.display = Some(glium::Display::new(window,
                                                    context,
-                                                   &graphicsManager.events_loop).unwrap());
-        return graphicsManager;
+                                                   &graphics_manager.events_loop).unwrap());
+        return graphics_manager;
     }
 
-    //graphicsManager.drawGraphics(chip.graphics);
-    pub fn drawGraphics(&self,
-        screenBuffer: [u8; super::chip::SCREEN_WIDTH * super::chip::SCREEN_HEIGHT])
+    pub fn draw_graphics(&self,
+        _screen_buffer: [u8; super::chip::SCREEN_WIDTH * super::chip::SCREEN_HEIGHT])
     {
         // TODO
     }

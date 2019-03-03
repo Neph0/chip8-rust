@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::io;
 use std::io::prelude::*;
 use std::fs::File;
@@ -11,12 +9,9 @@ pub const SCREEN_HEIGHT: usize = 32;
 const STACK_SIZE: usize = 16;
 const KEYBOARD_SIZE: usize = 16;
 
-const DRAW_FLAG_CLEAR: u16 = 0x00E0;
-const DRAW_FLAG_DRAW: u16 = 0xD000;
-
 const APPLICATION_MEMORY_LOCATION: usize = 0x200;
-const FONTSET_MEMORY_LOCATION: usize = 0;
-const FONTSET_MEMORY_SIZE: usize = 0x50;
+const _FONTSET_MEMORY_LOCATION: usize = 0;
+const _FONTSET_MEMORY_SIZE: usize = 0x50;
 
 pub struct Chip {
     opcode: u16,                                        // Current opcode
@@ -29,14 +24,14 @@ pub struct Chip {
     sound_timer: u32,                                   // Count down sound timer
     stack: [usize; STACK_SIZE],                         // Memory stack
     sp: usize,                                          // Stack pointer
-    key: [u8; KEYBOARD_SIZE],                           // Keyboard state
+    _key: [u8; KEYBOARD_SIZE],                           // Keyboard state
     pub draw_flag: u16,                                 // Draw flag
     pub exit_flag: u16,                                 // Exit flag
 }
 
 impl Chip {
     pub fn new() -> Chip {
-        let mut chip = Chip {
+        let chip = Chip {
             opcode: 0,
             memory: [0; MEMORY_SIZE],
             v: [0; NUMBER_OF_REGISTERS],
@@ -47,17 +42,17 @@ impl Chip {
             sound_timer: 0,
             stack: [0; STACK_SIZE],
             sp: 0,
-            key: [0; KEYBOARD_SIZE],
+            _key: [0; KEYBOARD_SIZE],
             draw_flag: 0,
             exit_flag: 0,
         };
 
-        for iterator in 0..80 {
+        for _iterator in 0..80 {
             // TODO
-            //chip.memory[iterator] = chip8_fontset[iterator];
+            //chip.memory[_iterator] = chip8_fontset[_iterator];
         }
 
-        chip
+        return chip;
     }
 
     pub fn load_game(&mut self, path: &std::string::String) -> Result<(), io::Error> {

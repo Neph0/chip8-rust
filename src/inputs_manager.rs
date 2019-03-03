@@ -4,12 +4,12 @@ pub struct InputsManager {
 
 impl InputsManager {
     pub fn new() -> InputsManager {
-        let mut inputsManager = InputsManager {};
+        let inputs_manager = InputsManager {};
         // TODO: Initialization
-        return inputsManager;
+        return inputs_manager;
     }
     // TODO
-    pub fn getInputs(self) {
+    pub fn _get_inputs(self) {
         // TODO
     }
 }
