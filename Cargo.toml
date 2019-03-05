@@ -5,4 +5,4 @@ authors = ["nepho"]
 edition = "2018"
 
 [dependencies]
-glium = "*"
+sfml = "*"
