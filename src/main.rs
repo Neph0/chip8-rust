@@ -21,7 +21,7 @@ fn main() {
 
     // Initialize various runtime elements
     let mut runtime_manager = runtime_manager::RuntimeManager::new();
-    let mut chip = chip::Chip::new();
+    let mut chip = chip::Chip::new(runtime_manager);
     let result = chip.load_game(&args[1]);
     match result {
         Err(e) => { println!("{:?}", e); process::exit(ERROR_GAME_LOADING_FAILED); },
@@ -31,9 +31,11 @@ fn main() {
     loop {
         chip.emulate_cycle();
 
-        runtime_manager.handle_events(&mut chip);
+        chip.handle_events();
+        //runtime_manager.handle_events(&mut chip);
         if chip.draw_flag != 0 {
-            runtime_manager.draw_graphics(&chip.graphics);
+            chip.draw_graphics();
+            //runtime_manager.draw_graphics(&chip.graphics);
         }
 
         if chip.exit_flag == 1 {
