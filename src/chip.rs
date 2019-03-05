@@ -27,11 +27,10 @@ pub struct Chip {
     key: [bool; KEYBOARD_SIZE],                           // Keyboard state
     pub draw_flag: u16,                                 // Draw flag
     pub exit_flag: u16,                                 // Exit flag
-    runtime_manager: super::runtime_manager::RuntimeManager,
 }
 
 impl Chip {
-    pub fn new(runtime_manager: super::runtime_manager::RuntimeManager) -> Chip {
+    pub fn new() -> Chip {
         let chip = Chip {
             opcode: 0,
             memory: [0; MEMORY_SIZE],
@@ -46,7 +45,6 @@ impl Chip {
             key: [false; KEYBOARD_SIZE],
             draw_flag: 1, // FIXME: Should start at 0
             exit_flag: 0,
-            runtime_manager: runtime_manager,
         };
 
         for _iterator in 0..80 {
@@ -249,13 +247,5 @@ impl Chip {
     pub fn set_key(&mut self, index: usize, state: bool) {
         println!("Setting key index {} to {}", index, state);
         self.key[index] = state;
-    }
-
-    pub fn handle_events(&mut self) {
-        self.runtime_manager.handle_events(self);
-    }
-
-    pub fn draw_graphics(&mut self) {
-        self.runtime_manager.draw_graphics(&self.graphics);
     }
 }
