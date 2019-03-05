@@ -1,11 +1,16 @@
 use std::env;
 use std::process;
+use std::time;
+use std::thread;
 
 mod runtime_manager;
 mod chip;
 
 const ERROR_INVALID_ARGUMENTS: i32 = 0x0001;
 const ERROR_GAME_LOADING_FAILED: i32 = 0x0002;
+
+const FRAME_PER_SECONDS: f32 = 30.0;
+const MILLISECONDS_PER_FRAME: f32 = 1000.0 / FRAME_PER_SECONDS;
 
 fn display_usage_and_exit() {
     println!("Usage:");
@@ -28,7 +33,12 @@ fn main() {
         Ok(result) => result
     }
 
+    let duration_per_frame: time::Duration = time::Duration::
+                from_millis(MILLISECONDS_PER_FRAME.trunc() as u64);
+
     loop {
+        let timer_start = time::SystemTime::now();
+
         chip.emulate_cycle();
 
         runtime_manager.handle_events(&mut chip);
@@ -38,6 +48,12 @@ fn main() {
 
         if chip.exit_flag == 1 {
             break;
+        }
+
+        let timer_end = time::SystemTime::now();
+        let loop_time = timer_end.duration_since(timer_start).unwrap();
+        if loop_time < duration_per_frame {
+            thread::sleep(duration_per_frame - loop_time);
         }
     }
 }
