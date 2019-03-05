@@ -33,7 +33,7 @@ fn main() {
 
         runtime_manager.handle_events(&mut chip);
         if chip.draw_flag != 0 {
-            runtime_manager.draw_graphics(chip.graphics);
+            runtime_manager.draw_graphics(&chip.graphics);
         }
 
         if chip.exit_flag == 1 {

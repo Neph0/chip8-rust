@@ -43,7 +43,7 @@ impl Chip {
             stack: [0; STACK_SIZE],
             sp: 0,
             _key: [0; KEYBOARD_SIZE],
-            draw_flag: 0,
+            draw_flag: 1, // FIXME: Should start at 0
             exit_flag: 0,
         };
 

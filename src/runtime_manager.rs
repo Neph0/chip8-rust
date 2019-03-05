@@ -15,7 +15,7 @@ pub struct RuntimeManager {
 impl RuntimeManager {
     pub fn new() -> RuntimeManager {
         let context_settings = window::ContextSettings {
-            antialiasing_level: 0,
+            //antialiasing_level: 0,
             ..Default::default()
         };
         RuntimeManager {
@@ -50,8 +50,33 @@ impl RuntimeManager {
     }
 
     pub fn draw_graphics(&mut self,
-         _screen_buffer: [u8; super::chip::SCREEN_WIDTH * super::chip::SCREEN_HEIGHT])
+         screen_buffer: &[u8; super::chip::SCREEN_WIDTH * super::chip::SCREEN_HEIGHT])
     {
         self.window.clear(&Color::rgb(0, 0, 0));
+
+        const w: u32 = super::chip::SCREEN_WIDTH as u32;
+        const h: u32 = super::chip::SCREEN_HEIGHT as u32;
+        let mut pixels = vec![0; (w * h * 4) as usize];
+        for i in 0..(w * h) as usize {
+            match screen_buffer[i] {
+                0 => {
+                    pixels[i]     = 0;
+                    pixels[i + 1] = 0;
+                    pixels[i + 2] = 0;
+                },
+                _ => {
+                    pixels[i]     = 255;
+                    pixels[i + 1] = 255;
+                    pixels[i + 2] = 255;
+                }
+            }
+            pixels[i + 3] = 255;
+        }
+
+        let mut texture = graphics::Texture::new(w, h).unwrap();
+        texture.update_from_pixels(&pixels, w, h, 0, 0);
+        let sprite  = graphics::Sprite::with_texture(&texture);
+        self.window.draw(&sprite);
+        self.window.display();
     }
 }
