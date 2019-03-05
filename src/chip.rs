@@ -24,7 +24,7 @@ pub struct Chip {
     sound_timer: u32,                                   // Count down sound timer
     stack: [usize; STACK_SIZE],                         // Memory stack
     sp: usize,                                          // Stack pointer
-    _key: [u8; KEYBOARD_SIZE],                           // Keyboard state
+    key: [bool; KEYBOARD_SIZE],                           // Keyboard state
     pub draw_flag: u16,                                 // Draw flag
     pub exit_flag: u16,                                 // Exit flag
 }
@@ -42,7 +42,7 @@ impl Chip {
             sound_timer: 0,
             stack: [0; STACK_SIZE],
             sp: 0,
-            _key: [0; KEYBOARD_SIZE],
+            key: [false; KEYBOARD_SIZE],
             draw_flag: 1, // FIXME: Should start at 0
             exit_flag: 0,
         };
@@ -244,7 +244,8 @@ impl Chip {
     }
 
     // TODO
-//    pub fn set_keys() {
-//
-//    }
+    pub fn set_key(&mut self, index: usize, state: bool) {
+        println!("Setting key index {} to {}", index, state);
+        self.key[index] = state;
+    }
 }
