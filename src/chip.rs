@@ -355,23 +355,35 @@ impl Chip {
                         self.delay_timer = vx.into();
                     },
                     0x0018 => {
-                        panic!("NOT IMPLEMENTED: {:0>4x?}", self.opcode);
+                        println!("SET SOUND_TIMER TO V{}", x);
+                        self.sound_timer = vx.into();
                     },
                     0x001E => {
                         println!("ADD V{} TO I", x);
                         self.i += vx as u32;
                     },
                     0x0029 => {
-                        panic!("NOT IMPLEMENTED: {:0>4x?}", self.opcode);
+                        println!("SET I TO LOCATION OF SPRITE IN V{}", x);
+                        // TODO: Not implemented
+                        self.i = 0;
                     },
                     0x0033 => {
-                        panic!("NOT IMPLEMENTED: {:0>4x?}", self.opcode);
+                        println!("STORE DECIMAL OF V{} AT {}", x, self.i);
+                        self.memory[self.i as usize + 0] = vx / 100;
+                        self.memory[self.i as usize + 1] = (vx % 100) / 10;
+                        self.memory[self.i as usize + 2] = vx % 10;
                     },
                     0x0055 => {
-                        panic!("NOT IMPLEMENTED: {:0>4x?}", self.opcode);
+                        println!("STORE REGISTERS AT {:x?}", self.i);
+                        for i in 0x0..0xf {
+                            self.memory[self.i as usize + i] = self.v[i];
+                        }
                     },
                     0x0065 => {
-                        panic!("NOT IMPLEMENTED: {:0>4x?}", self.opcode);
+                        println!("RESTORE REGISTERS FROM {:x?}", self.i);
+                        for i in 0x0..0xf {
+                            self.v[i] = self.memory[self.i as usize + i];
+                        }
                     },
                     _ =>      {
                         panic!("UNKNOWN OPCODE: {:0>4x?}", self.opcode);
