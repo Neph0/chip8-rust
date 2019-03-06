@@ -10,8 +10,26 @@ const STACK_SIZE: usize = 16;
 const KEYBOARD_SIZE: usize = 16;
 
 const APPLICATION_MEMORY_LOCATION: usize = 0x200;
-const _FONTSET_MEMORY_LOCATION: usize = 0;
-const _FONTSET_MEMORY_SIZE: usize = 0x50;
+const FONTSET_ELEMENT_SIZE: usize = 5;
+const FONTSET_ELEMENT_NUMBERS: usize = 16;
+const FONTSET: [u8; FONTSET_ELEMENT_SIZE * FONTSET_ELEMENT_NUMBERS] = [
+    0xF0, 0x90, 0x90, 0x90, 0xF0,
+    0x20, 0x60, 0x20, 0x20, 0x70,
+    0xF0, 0x10, 0xF0, 0x80, 0xF0,
+    0xF0, 0x10, 0xF0, 0x10, 0xF0,
+    0x90, 0x90, 0xF0, 0x10, 0x10,
+    0xF0, 0x80, 0xF0, 0x10, 0xF0,
+    0xF0, 0x80, 0xF0, 0x90, 0xF0,
+    0xF0, 0x10, 0x20, 0x40, 0x40,
+    0xF0, 0x90, 0xF0, 0x90, 0xF0,
+    0xF0, 0x90, 0xF0, 0x10, 0xF0,
+    0xF0, 0x90, 0xF0, 0x90, 0x90,
+    0xE0, 0x90, 0xE0, 0x90, 0xE0,
+    0xF0, 0x80, 0x80, 0x80, 0xF0,
+    0xE0, 0x90, 0x90, 0x90, 0xE0,
+    0xF0, 0x80, 0xF0, 0x80, 0xF0,
+    0xF0, 0x80, 0xF0, 0x80, 0x80,
+];
 
 pub struct Chip {
     opcode: u16,                                        // Current opcode
@@ -24,14 +42,14 @@ pub struct Chip {
     sound_timer: u32,                                   // Count down sound timer
     stack: [usize; STACK_SIZE],                         // Memory stack
     sp: usize,                                          // Stack pointer
-    key: [bool; KEYBOARD_SIZE],                           // Keyboard state
+    key: [bool; KEYBOARD_SIZE],                         // Keyboard state
     pub draw_flag: u16,                                 // Draw flag
     pub exit_flag: u16,                                 // Exit flag
 }
 
 impl Chip {
     pub fn new() -> Chip {
-        let chip = Chip {
+        let mut chip = Chip {
             opcode: 0,
             memory: [0; MEMORY_SIZE],
             v: [0; NUMBER_OF_REGISTERS],
@@ -43,13 +61,12 @@ impl Chip {
             stack: [0; STACK_SIZE],
             sp: 0,
             key: [false; KEYBOARD_SIZE],
-            draw_flag: 1, // FIXME: Should start at 0
+            draw_flag: 0,
             exit_flag: 0,
         };
 
-        for _iterator in 0..80 {
-            // TODO
-            //chip.memory[_iterator] = chip8_fontset[_iterator];
+        for iterator in 0..80 {
+            chip.memory[iterator] = FONTSET[iterator];
         }
 
         return chip;
@@ -178,20 +195,20 @@ impl Chip {
                 let vy = self.v[y];
                 match self.opcode & 0x000F {
                     0x0000 => {
-                        // TODO
-                        println!("TODO: 0x000");
+                        println!("SET V{} to V{}", x, y);
+                        self.v[x] = vy;
                     },
                     0x0001 => {
-                        // TODO
-                        println!("TODO: 0x001");
+                        println!("SET V{} to V{} | V{}", x, x, y);
+                        self.v[x] = vx | vy;
                     },
                     0x0002 => {
-                        // TODO
-                        println!("TODO: 0x002");
+                        println!("SET V{} to V{} & V{}", x, x, y);
+                        self.v[x] = vx & vy;
                     },
                     0x0003 => {
-                        // TODO
-                        println!("TODO: 0x003");
+                        println!("SET V{} to V{} ^ V{}", x, x, y);
+                        self.v[x] = vx ^ vy;
                     },
                     0x0004 => {
                         println!("ADDITION: V{} = V{} + V{} = {}",
@@ -205,24 +222,20 @@ impl Chip {
                         self.pc += 2;
                     },
                     0x0005 => {
-                        // TODO
-                        println!("TODO: 0x005");
+                        panic!("TODO: 0x005");
+
                     },
                     0x0006 => {
-                        // TODO
-                        println!("TODO: 0x006");
+                        panic!("TODO: 0x006");
                     },
                     0x0007 => {
-                        // TODO
-                        println!("TODO: 0x007");
+                        panic!("TODO: 0x007");
                     },
                     0x000E => {
-                        // TODO
-                        println!("TODO: 0x00E");
+                        panic!("TODO: 0x00E");
                     },
                     _      => {
-                        // TODO
-                        println!("TODO: 0x___");
+                        panic!("UNKNOWN OPCODE: {:0>4x?}", self.opcode);
                     }
                 }
 
@@ -230,7 +243,6 @@ impl Chip {
             },
             // 0x9XY0: Skip the next instruction if VX doesn't equal VY
             0x9000 => {
-                // TODO
                 let x = (self.opcode as usize & 0x0F00) >> 8;
                 let y = (self.opcode as usize & 0x00F0) >> 4;
                 let vx = self.v[x];
@@ -249,46 +261,45 @@ impl Chip {
             },
             // 0xBNNN: Jump to the address NNN + V0
             0xB000 =>  {
-                // TODO
+                panic!("TODO: 0xBNNN");
             },
             // 0xCXNN: Set VX to the result of NN & rand()[0..255]
             0xC000 => {
-                // TODO
                 let r = rand::random::<u8>();
                 let x = (self.opcode as usize & 0x0F00) >> 8;
-                let vx = self.v[x];
                 let nn = self.opcode as u8 & 0x00FF;
                 println!("SET V{} TO {} & {} = {}",
                          x, r, nn, r & nn);
                 self.v[x] = r & nn;
                 self.pc += 2;
             },
-            // 0xDXYN: Draw a sprite at coordinate (VX, VY), that has a width of 8 pixels
-            //   and a height of N pixels. Each row of 8 pixels is read as bit-coded starting
-            //   from memory location I; I value doesn't change after the execution of this
-            //   instruction. VF is set to 1 if any screen pixels are flipped from set to
-            //   unset when the sprite is drawn, and to 0 if that doesn't happen
+            // 0xDXYN: Read N bytes from memory, starting in I. Those bytes are then displayed
+            //         as sprites on screen at coordinates (VX, VY). Sprites are XORed onto the
+            //         existing screen. If this causes any pixels to be erased, VF is set to 1,
+            //         otherwise it is set to 0.
             0xD000 => {
-                // TODO
                 let x = (self.opcode as usize & 0x0F00) >> 8;
                 let y = (self.opcode as usize & 0x00F0) >> 4;
                 let vx = self.v[x] as usize;
                 let vy = self.v[y] as usize;
                 let n = (self.opcode as usize & 0x000F) >> 0;
                 println!("DRAW SPRITE (V{} = {}, V{} = {}), HEIGHT {})", x, vx, y, vy, n);
+
                 let mut flipped = false;
                 for i in 0..n {
                     for j in 0..8 {
-                        let pos = vx * (vy + i) + j;
-                        if self.graphics[pos] == 0 && self.memory[self.i as usize + j] == 1 {
+                        let pos = (vy + i) * SCREEN_WIDTH + vx + j;
+                        let bit = self.memory[self.i as usize + i * 8] >> j & 0x1;
+                        if self.graphics[pos] == 0 && bit == 1 {
                             flipped = true;
                         }
-                        self.graphics[vx * (vy + i) + j] = self.memory[self.i as usize + j];
+                        self.graphics[pos] = bit;
                     }
                 }
                 if flipped {
                     self.v[0xf] = flipped.into();
                 }
+
                 self.draw_flag = 1;
                 self.pc += 2;
             },
@@ -313,7 +324,7 @@ impl Chip {
                         }
                     },
                     _      => {
-                        println!("NOT HANDLED: {:0>4x?}", self.opcode);
+                        panic!("UNKNOWN OPCODE: {:0>4x?}", self.opcode);
                     }
                 }
 
@@ -363,9 +374,9 @@ impl Chip {
                         self.i += vx as u32;
                     },
                     0x0029 => {
+                        panic!("TODO: 0x0029");
                         println!("SET I TO LOCATION OF SPRITE IN V{}", x);
                         // TODO: Not implemented
-                        self.i = 0;
                     },
                     0x0033 => {
                         println!("STORE DECIMAL OF V{} AT {}", x, self.i);
@@ -394,7 +405,7 @@ impl Chip {
             },
             _      => {
                 // Cannot happen but for some reason rustc is complaining
-                std::panic!("Unknown opcode: 0x{}{}", self.opcode & 0xFF00, self.opcode & 0x00FF);
+                panic!("UNKNOWN OPCODE: {:0>4x?}", self.opcode);
             }
         }
         

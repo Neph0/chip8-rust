@@ -12,6 +12,9 @@ const ERROR_GAME_LOADING_FAILED: i32 = 0x0002;
 const FRAME_PER_SECONDS: f32 = 60.0;
 const MILLISECONDS_PER_FRAME: f32 = 1000.0 / FRAME_PER_SECONDS;
 
+const REAL_WINDOW_WIDTH: u32 = 640;
+const REAL_WINDOW_HEIGHT: u32 = 320;
+
 fn display_usage_and_exit() {
     println!("Usage:");
     println!("./chip8 PATH_TO_GAME");
@@ -26,6 +29,8 @@ fn main() {
 
     // Initialize various runtime elements
     let mut runtime_manager = runtime_manager::RuntimeManager::new();
+    let v = sfml::system::Vector2u::new(REAL_WINDOW_WIDTH, REAL_WINDOW_HEIGHT);
+    runtime_manager.window.set_size(v);
     let mut chip = chip::Chip::new();
     let result = chip.load_game(&args[1]);
     match result {
