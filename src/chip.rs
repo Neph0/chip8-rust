@@ -2,6 +2,8 @@ use std::io;
 use std::io::prelude::*;
 use std::fs::File;
 
+use super::opcodes::*;
+
 const MEMORY_SIZE: usize = 4096;
 const NUMBER_OF_REGISTERS: usize = 16;
 pub const SCREEN_WIDTH: usize = 64;
@@ -13,22 +15,22 @@ const APPLICATION_MEMORY_LOCATION: usize = 0x200;
 const FONTSET_ELEMENT_SIZE: usize = 5;
 const FONTSET_ELEMENT_NUMBERS: usize = 16;
 const FONTSET: [u8; FONTSET_ELEMENT_SIZE * FONTSET_ELEMENT_NUMBERS] = [
-    0xF0, 0x90, 0x90, 0x90, 0xF0,
-    0x20, 0x60, 0x20, 0x20, 0x70,
-    0xF0, 0x10, 0xF0, 0x80, 0xF0,
-    0xF0, 0x10, 0xF0, 0x10, 0xF0,
-    0x90, 0x90, 0xF0, 0x10, 0x10,
-    0xF0, 0x80, 0xF0, 0x10, 0xF0,
-    0xF0, 0x80, 0xF0, 0x90, 0xF0,
-    0xF0, 0x10, 0x20, 0x40, 0x40,
-    0xF0, 0x90, 0xF0, 0x90, 0xF0,
-    0xF0, 0x90, 0xF0, 0x10, 0xF0,
-    0xF0, 0x90, 0xF0, 0x90, 0x90,
-    0xE0, 0x90, 0xE0, 0x90, 0xE0,
-    0xF0, 0x80, 0x80, 0x80, 0xF0,
-    0xE0, 0x90, 0x90, 0x90, 0xE0,
-    0xF0, 0x80, 0xF0, 0x80, 0xF0,
-    0xF0, 0x80, 0xF0, 0x80, 0x80,
+    0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+    0x20, 0x60, 0x20, 0x20, 0x70, // 1
+    0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+    0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+    0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+    0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+    0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+    0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+    0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+    0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+    0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+    0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+    0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+    0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+    0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+    0xF0, 0x80, 0xF0, 0x80, 0x80, // F
 ];
 
 pub struct Chip {
@@ -94,7 +96,7 @@ impl Chip {
             // - 0x0NNN: Call RCA 1802 program at address NNN
             // - 0x00E0: Clear the screen
             // - 0x00EE: Return from subroutine
-            0x0000 => {
+            FAMILY_MISCEALLENOUS => {
                 match self.opcode & 0x0FFF {
                     0x00E0 => {
                         // TODO: Clear the screen
@@ -114,19 +116,19 @@ impl Chip {
                 }
             },
             // 0x1NNN: Jump to NNN
-            0x1000 => {
+            OPCODE_JMP => {
                 println!("JUMP TO {:0>4x?}", self.opcode & 0x0FFF);
                 self.pc = (self.opcode & 0x0FFF).into();
             },
             // 0x2NNN: Call subroutine at NNN
-            0x2000 => {
+            OPCODE_CALL_SUBROUTINE => {
                 println!("CALL SUBROUTINE AT {:x?}", self.opcode & 0xFFF);
                 self.stack[self.sp] = self.pc + 2;
                 self.sp += 1;
                 self.pc = (self.opcode & 0x0FFF).into();
             },
             // 0x3XNN: Skip the next instruction if VX equals NN
-            0x3000 => {
+            OPCODE_SKIP_IF_EQ_NN => {
                 let x = (self.opcode as usize & 0x0F00) >> 8;
                 let vx = self.v[x];
                 let nn = self.opcode as u8 & 0x00FF;
@@ -138,7 +140,7 @@ impl Chip {
                 }
             },
             // 0x4XNN: Skip the next instruction if VX doesn't equal NN
-            0x4000 => {
+            OPCODE_SKIP_IF_NEQ_NN => {
                 let x  = (self.opcode as usize & 0x0F00) >> 8;
                 let vx = self.v[x];
                 let nn = self.opcode as u8 & 0x00FF;
@@ -150,7 +152,7 @@ impl Chip {
                 }
             },
             // 0x5XY0: Skip the next instruction if VX equals VY
-            0x5000 => {
+            OPCODE_SKIP_IF_EQ_XY => {
                 let x = (self.opcode as usize & 0x0F00) >> 8;
                 let y = (self.opcode as usize & 0x00F0) >> 4;
                 let vx = self.v[x];
@@ -163,14 +165,14 @@ impl Chip {
                 }
             },
             // 0x6XNN: Set VX to NN
-            0x6000 => {
+            OPCODE_SET_VX_TO_NN => {
                 let nn = self.opcode as u8 & 0x00FF;
                 println!("SET V{} TO {:x?}", (self.opcode as usize & 0x0F00) >> 8, nn);
                 self.v[(self.opcode as usize & 0x0F00) >> 8] = nn;
                 self.pc += 2;
             },
             // 0x7XNN: Add NN to VX (carry flag is not changed)
-            0x7000 => {
+            OPCODE_ADD_NN_TO_VX => {
                 let nn = self.opcode as u8 & 0x00FF;
                 let x = (self.opcode as usize & 0x0F00) >> 8;
                 // Ignore overflows
@@ -188,29 +190,29 @@ impl Chip {
             // - 0x8XY6: Store the LSB of VX in VF and then shift VX right by 1
             // - 0x8XY7: Set VX to VY minus VX (VF is set to 0 if there is a borrow, else 1)
             // - 0x8XYE: Store the MSB of VX in VF and then shift VX left by 1
-            0x8000 => {
+            FAMILY_ARITHMETICS => {
                 let x = (self.opcode as usize & 0x0F00) >> 8;
                 let y = (self.opcode as usize & 0x00F0) >> 4;
                 let vx = self.v[x];
                 let vy = self.v[y];
-                match self.opcode & 0x000F {
-                    0x0000 => {
+                match self.opcode & 0xF00F {
+                    OPCODE_SET_VX_TO_VY => {
                         println!("SET V{} to V{}", x, y);
                         self.v[x] = vy;
                     },
-                    0x0001 => {
+                    OPCODE_SET_VX_TO_VX_OR_VY => {
                         println!("SET V{} to V{} | V{}", x, x, y);
                         self.v[x] = vx | vy;
                     },
-                    0x0002 => {
+                    OPCODE_SET_VX_TO_VX_AND_VY => {
                         println!("SET V{} to V{} & V{}", x, x, y);
                         self.v[x] = vx & vy;
                     },
-                    0x0003 => {
+                    OPCODE_SET_VX_TO_VX_XOR_VY => {
                         println!("SET V{} to V{} ^ V{}", x, x, y);
                         self.v[x] = vx ^ vy;
                     },
-                    0x0004 => {
+                    OPCODE_SET_VX_TO_VX_PLUS_VY => {
                         println!("ADDITION: V{} = V{} + V{} = {}",
                                  x, x, y, self.v[x] + vy);
                         if vy > (0xFF - vx) {
@@ -221,17 +223,16 @@ impl Chip {
                         self.v[x] += vy;
                         self.pc += 2;
                     },
-                    0x0005 => {
+                    OPCODE_SUBSTRACT_VY_FROM_VX => {
                         panic!("TODO: 0x005");
-
                     },
-                    0x0006 => {
+                    OPCODE_STORE_LSB_OF_VX_IN_VF_AND_RSHIFT_VX => {
                         panic!("TODO: 0x006");
                     },
-                    0x0007 => {
+                    OPCODE_SET_VX_TO_VY_MINUS_VX => {
                         panic!("TODO: 0x007");
                     },
-                    0x000E => {
+                    OPCODE_STORE_MSB_OF_VX_IN_VF_AND_LSHIFT_VX => {
                         panic!("TODO: 0x00E");
                     },
                     _      => {
@@ -242,7 +243,7 @@ impl Chip {
                 self.pc += 2;
             },
             // 0x9XY0: Skip the next instruction if VX doesn't equal VY
-            0x9000 => {
+            OPCODE_SKIP_IF_NEQ_XY => {
                 let x = (self.opcode as usize & 0x0F00) >> 8;
                 let y = (self.opcode as usize & 0x00F0) >> 4;
                 let vx = self.v[x];
@@ -254,17 +255,17 @@ impl Chip {
                 }
             },
             // 0xANNN: Set I to the address NNN
-            0xA000 => {
+            OPCODE_SET_I_TO_NNN => {
                 println!("SET I TO {:x?}", self.opcode & 0x0FFF);
                 self.i = (self.opcode & 0x0FFF).into();
                 self.pc += 2;
             },
             // 0xBNNN: Jump to the address NNN + V0
-            0xB000 =>  {
+            OPCODE_JUMP_TO_NNN_PLUS_V0 =>  {
                 panic!("TODO: 0xBNNN");
             },
             // 0xCXNN: Set VX to the result of NN & rand()[0..255]
-            0xC000 => {
+            OPCODE_SET_VX_TO_NN_AND_RAND => {
                 let r = rand::random::<u8>();
                 let x = (self.opcode as usize & 0x0F00) >> 8;
                 let nn = self.opcode as u8 & 0x00FF;
@@ -277,7 +278,7 @@ impl Chip {
             //         as sprites on screen at coordinates (VX, VY). Sprites are XORed onto the
             //         existing screen. If this causes any pixels to be erased, VF is set to 1,
             //         otherwise it is set to 0.
-            0xD000 => {
+            OPCODE_DRAW_SPRITE => {
                 let x = (self.opcode as usize & 0x0F00) >> 8;
                 let y = (self.opcode as usize & 0x00F0) >> 4;
                 let vx = self.v[x] as usize;
@@ -306,18 +307,18 @@ impl Chip {
             // 0xE--- family: Input conditionals
             // - 0xEX9E: Skip the next instruction if the key stored in VX is pressed
             // - 0xEXA1: Skip the next instruction if the key stored in VX isn't pressed
-            0xE000 => {
+            FAMILY_INPUT_CONDITIONALS => {
                 let x = (self.opcode as usize & 0x0F00) >> 8;
                 let vx = self.v[x] as usize;
 
-                match self.opcode & 0x00FF {
-                    0x009E => {
+                match self.opcode & 0xF0FF {
+                    OPCODE_SKIP_IF_VX_IS_PRESSED => {
                         println!("SKIP NEXT INSTRUCTION IF KEY {} IS PRESSED", vx);
                         if self.key[vx] == true {
                             self.pc += 2;
                         }
                     },
-                    0x00A1 => {
+                    OPCODE_SKIP_IF_VX_IS_NOT_PRESSED => {
                         println!("SKIP NEXT INSTRUCTION IF KEY {} IS NOT PRESSED", vx);
                         if self.key[vx] == false {
                             self.pc += 2;
@@ -349,48 +350,48 @@ impl Chip {
             // - 0xFX65: Fill V0 to VX (including VX) with values from memory starting at
             //           address I. The offset from I is increased by 1 for each value written,
             //           but I itself is left unmodified.
-            0xF000 => {
+            FAMILY_TIMERS_INPUT_QUERY_ETC => {
                 let x  = ((self.opcode & 0x0F00) >> 8) as usize;
                 let vx = self.v[x];
 
-                match self.opcode & 0x00FF {
-                    0x0007 => {
+                match self.opcode & 0xF0FF {
+                    OPCODE_SET_VX_TO_DELAY_TIMER => {
                         println!("SET V{} = DELAY_TIMER", x);
                         self.v[x] = self.delay_timer as u8;
                     },
-                    0x000A => {
+                    OPCODE_WAIT_FOR_INPUT_AND_SET_TO_VX => {
                         panic!("NOT IMPLEMENTED: {:0>4x?}", self.opcode);
                     },
-                    0x0015 => {
+                    OPCODE_SET_DELAY_TIMER_TO_VX => {
                         println!("SET DELAY_TIMER TO V{}", x);
                         self.delay_timer = vx.into();
                     },
-                    0x0018 => {
+                    OPCODE_SET_SOUND_TIMER_TO_VX => {
                         println!("SET SOUND_TIMER TO V{}", x);
                         self.sound_timer = vx.into();
                     },
-                    0x001E => {
+                    OPCODE_ADD_VX_TO_I => {
                         println!("ADD V{} TO I", x);
                         self.i += vx as u32;
                     },
-                    0x0029 => {
+                    OPCODE_SET_I_TO_SPRITE_IN_VX => {
                         panic!("TODO: 0x0029");
                         println!("SET I TO LOCATION OF SPRITE IN V{}", x);
                         // TODO: Not implemented
                     },
-                    0x0033 => {
+                    OPCODE_STORE_VX_AS_DIGITS_AT_I => {
                         println!("STORE DECIMAL OF V{} AT {}", x, self.i);
                         self.memory[self.i as usize + 0] = vx / 100;
                         self.memory[self.i as usize + 1] = (vx % 100) / 10;
                         self.memory[self.i as usize + 2] = vx % 10;
                     },
-                    0x0055 => {
+                    OPCODE_STORE_REGISTERS_AT_I => {
                         println!("STORE REGISTERS AT {:x?}", self.i);
                         for i in 0x0..0xf {
                             self.memory[self.i as usize + i] = self.v[i];
                         }
                     },
-                    0x0065 => {
+                    OPCODE_RESTORE_REGISTERS_FROM_I => {
                         println!("RESTORE REGISTERS FROM {:x?}", self.i);
                         for i in 0x0..0xf {
                             self.v[i] = self.memory[self.i as usize + i];
@@ -402,9 +403,8 @@ impl Chip {
                 }
 
                 self.pc += 2;
-            },
-            _      => {
-                // Cannot happen but for some reason rustc is complaining
+            }
+            _ => {
                 panic!("UNKNOWN OPCODE: {:0>4x?}", self.opcode);
             }
         }

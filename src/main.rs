@@ -5,6 +5,7 @@ use std::thread;
 
 mod runtime_manager;
 mod chip;
+mod opcodes;
 
 const ERROR_INVALID_ARGUMENTS: i32 = 0x0001;
 const ERROR_GAME_LOADING_FAILED: i32 = 0x0002;
