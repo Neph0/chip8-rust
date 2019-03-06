@@ -47,6 +47,7 @@ pub struct Chip {
     key: [bool; KEYBOARD_SIZE],                         // Keyboard state
     pub draw_flag: u16,                                 // Draw flag
     pub exit_flag: u16,                                 // Exit flag
+    pub clear_flag: u16,                                // Clear screen flag
 }
 
 impl Chip {
@@ -65,6 +66,7 @@ impl Chip {
             key: [false; KEYBOARD_SIZE],
             draw_flag: 0,
             exit_flag: 0,
+            clear_flag: 0,
         };
 
         for iterator in 0..80 {
@@ -98,12 +100,12 @@ impl Chip {
             // - 0x00EE: Return from subroutine
             FAMILY_MISCEALLENOUS => {
                 match self.opcode & 0x0FFF {
-                    0x00E0 => {
+                    OPCODE_CLEAR_SCREEN => {
                         // TODO: Clear the screen
-                        println!("NOT_IMPLEMENTED: SCREEN_CLEAR");
+                        self.clear_flag = 1;
                         self.pc += 2;
                     },
-                    0x00EE => {
+                    OPCODE_RETURN_FROM_SUBROUTINE => {
                         println!("RETURNING FROM SUBROUTINE TO {:0>4x?}", self.stack[self.sp - 1]);
                         self.stack[self.sp] = 0;
                         self.sp -= 1;
@@ -224,7 +226,11 @@ impl Chip {
                         self.pc += 2;
                     },
                     OPCODE_SUBSTRACT_VY_FROM_VX => {
-                        panic!("TODO: 0x005");
+                        println!("SUBSTRACTION: V{} = V{} - V{} = {}",
+                                 x, x, y, self.v[x] - vy);
+                        if vy > vx { self.v[0xf] = 0; }
+                        else { self.v[0xf] = 1; }
+                        self.v[x] -= vy;
                     },
                     OPCODE_STORE_LSB_OF_VX_IN_VF_AND_RSHIFT_VX => {
                         panic!("TODO: 0x006");
@@ -248,6 +254,7 @@ impl Chip {
                 let y = (self.opcode as usize & 0x00F0) >> 4;
                 let vx = self.v[x];
                 let vy = self.v[y];
+                println!("SKIP NEXT INSTRUCTION IF V{:x?} ({}) != V{:x?} ({})", x, vx, y, vy);
                 if vx != vy {
                     self.pc += 4;
                 } else {
@@ -286,19 +293,16 @@ impl Chip {
                 let n = (self.opcode as usize & 0x000F) >> 0;
                 println!("DRAW SPRITE (V{} = {}, V{} = {}), HEIGHT {})", x, vx, y, vy, n);
 
-                let mut flipped = false;
+                self.v[0xf] = 0;
                 for i in 0..n {
                     for j in 0..8 {
                         let pos = (vy + i) * SCREEN_WIDTH + vx + j;
                         let bit = self.memory[self.i as usize + i * 8] >> j & 0x1;
-                        if self.graphics[pos] == 0 && bit == 1 {
-                            flipped = true;
+                        if self.graphics[pos] ^ bit == 0 {
+                            self.v[0xf] = 1;
                         }
-                        self.graphics[pos] = bit;
+                        self.graphics[pos] ^= bit;
                     }
-                }
-                if flipped {
-                    self.v[0xf] = flipped.into();
                 }
 
                 self.draw_flag = 1;
@@ -375,9 +379,8 @@ impl Chip {
                         self.i += vx as u32;
                     },
                     OPCODE_SET_I_TO_SPRITE_IN_VX => {
-                        panic!("TODO: 0x0029");
                         println!("SET I TO LOCATION OF SPRITE IN V{}", x);
-                        // TODO: Not implemented
+                        self.i = (vx * FONTSET_ELEMENT_SIZE as u8).into();
                     },
                     OPCODE_STORE_VX_AS_DIGITS_AT_I => {
                         println!("STORE DECIMAL OF V{} AT {}", x, self.i);

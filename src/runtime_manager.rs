@@ -88,8 +88,6 @@ impl RuntimeManager {
     pub fn draw_graphics(&mut self,
          screen_buffer: &[u8; super::chip::SCREEN_WIDTH * super::chip::SCREEN_HEIGHT])
     {
-        self.window.clear(&Color::rgb(0, 0, 0));
-
         const W: u32 = super::chip::SCREEN_WIDTH as u32;
         const H: u32 = super::chip::SCREEN_HEIGHT as u32;
         // SFML sprites, 4 bytes per pixel: (r, g, b, a)
@@ -117,5 +115,10 @@ impl RuntimeManager {
         let sprite  = graphics::Sprite::with_texture(&texture);
         self.window.draw(&sprite);
         self.window.display();
+    }
+
+    pub fn clear_screen(&mut self)
+    {
+        self.window.clear(&Color::rgb(0, 0, 0));
     }
 }

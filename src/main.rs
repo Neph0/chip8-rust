@@ -45,22 +45,37 @@ fn main() {
     loop {
         let timer_start = time::SystemTime::now();
 
-        chip.emulate_cycle();
+        loop {
+            chip.emulate_cycle();
 
-        runtime_manager.handle_events(&mut chip);
-        if chip.draw_flag != 0 {
-            runtime_manager.draw_graphics(&chip.graphics);
-            chip.draw_flag = 0;
+            runtime_manager.handle_events(&mut chip);
+
+            if chip.clear_flag != 0 {
+                runtime_manager.clear_screen();
+                chip.clear_flag = 0;
+            }
+
+            if chip.draw_flag != 0 {
+                runtime_manager.draw_graphics(&chip.graphics);
+            }
+
+            if chip.exit_flag == 1 {
+                break;
+            }
+
+            if chip.draw_flag != 0 {
+                let timer_end = time::SystemTime::now();
+                let loop_time = timer_end.duration_since(timer_start).unwrap();
+                if loop_time < duration_per_frame {
+                    println!("Sleeping for {:?}", duration_per_frame - loop_time);
+                    thread::sleep(duration_per_frame - loop_time);
+                    chip.draw_flag = 0;
+                }
+                else {
+                    println!("Loop was too slow: {:?}", loop_time - duration_per_frame);
+                }
+                break;
+            }
         }
-
-        if chip.exit_flag == 1 {
-            break;
-        }
-
-        let timer_end = time::SystemTime::now();
-        let _loop_time = timer_end.duration_since(timer_start).unwrap();
-        //if loop_time < duration_per_frame {
-        //    thread::sleep(duration_per_frame - loop_time);
-        //}
     }
 }
