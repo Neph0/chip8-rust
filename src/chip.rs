@@ -122,20 +122,27 @@ impl Chip {
             },
             // 0x4XNN: Skip the next instruction if VX doesn't equal NN
             0x4000 => {
-                let vx = self.v[(self.opcode as usize & 0x0F00) >> 8];
+                let x  = (self.opcode as usize & 0x0F00) >> 8;
+                let vx = self.v[x];
                 let nn = self.opcode as u8 & 0x00FF;
-                println!();
+                println!("SKIP NEXT INSTRUCTION IF V{} != {}", x, nn);
                 if vx == nn {
                     self.pc += 4;
+                } else {
+                    self.pc += 2;
                 }
             },
             // 0x5XY0: Skip the next instruction if VX equals VY
             0x5000 => {
-                let vx = self.v[(self.opcode as usize & 0x0F00) >> 8];
-                let vy = self.v[(self.opcode as usize & 0x00F0) >> 4];
-                println!();
+                let x = (self.opcode as usize & 0x0F00) >> 8;
+                let y = (self.opcode as usize & 0x00F0) >> 4;
+                let vx = self.v[x];
+                let vy = self.v[y];
+                println!("SKIP NEXT INSTRUCTION IF V{} == V{}", x, y);
                 if vx == vy {
                     self.pc += 4;
+                } else {
+                    self.pc += 2;
                 }
             },
             // 0x6XNN: Set VX to NN
@@ -149,9 +156,10 @@ impl Chip {
             0x7000 => {
                 let nn = self.opcode as u8 & 0x00FF;
                 let x = (self.opcode as usize & 0x0F00) >> 8;
+                // Ignore overflows
                 println!("ADD {:x?} TO V{:x?} = {:x?}",
-                         nn, x, self.v[x] as u8 + nn);
-                self.v[x] += nn;
+                         nn, x, self.v[x].wrapping_add(nn));
+                self.v[x] = self.v[x].wrapping_add(nn);
                 self.pc += 2;
             },
             // 0x8--- family: Arithmetics
@@ -244,9 +252,17 @@ impl Chip {
             0xB000 =>  {
                 // TODO
             },
-            // 0xCXNN: Set VC to the result of NN & rand()[0..255]
+            // 0xCXNN: Set VX to the result of NN & rand()[0..255]
             0xC000 => {
                 // TODO
+                let r = rand::random::<u8>();
+                let x = (self.opcode as usize & 0x0F00) >> 8;
+                let vx = self.v[x];
+                let nn = self.opcode as u8 & 0x00FF;
+                println!("SET V{} TO {} & {} = {}",
+                         x, r, nn, r & nn);
+                self.v[x] = r & nn;
+                self.pc += 2;
             },
             // 0xDXYN: Draw a sprite at coordinate (VX, VY), that has a width of 8 pixels
             //   and a height of N pixels. Each row of 8 pixels is read as bit-coded starting
@@ -273,7 +289,28 @@ impl Chip {
             // - 0xEX9E: Skip the next instruction if the key stored in VX is pressed
             // - 0xEXA1: Skip the next instruction if the key stored in VX isn't pressed
             0xE000 => {
-                // TODO
+                let x = (self.opcode as usize & 0x0F00) >> 8;
+                let vx = self.v[x] as usize;
+
+                match self.opcode & 0x00FF {
+                    0x009E => {
+                        println!("SKIP NEXT INSTRUCTION IF KEY {} IS PRESSED", vx);
+                        if self.key[vx] == true {
+                            self.pc += 2;
+                        }
+                    },
+                    0x00A1 => {
+                        println!("SKIP NEXT INSTRUCTION IF KEY {} IS NOT PRESSED", vx);
+                        if self.key[vx] == false {
+                            self.pc += 2;
+                        }
+                    },
+                    _      => {
+                        println!("NOT HANDLED: {:0>4x?}", self.opcode);
+                    }
+                }
+
+                self.pc += 2;
             },
             // 0xF--- family: Timers, input query, and others
             // - 0xFX07: Set VX to the value of the delay timer
@@ -295,7 +332,46 @@ impl Chip {
             //           address I. The offset from I is increased by 1 for each value written,
             //           but I itself is left unmodified.
             0xF000 => {
-                // TODO
+                let x  = ((self.opcode & 0x0F00) >> 8) as usize;
+                let vx = self.v[x];
+
+                match self.opcode & 0x00FF {
+                    0x0007 => {
+                        println!("SET V{} = DELAY_TIMER", x);
+                        self.v[x] = self.delay_timer as u8;
+                    },
+                    0x000A => {
+                        panic!("NOT IMPLEMENTED: {:0>4x?}", self.opcode);
+                    },
+                    0x0015 => {
+                        println!("SET DELAY_TIMER TO V{}", x);
+                        self.delay_timer = vx.into();
+                    },
+                    0x0018 => {
+                        panic!("NOT IMPLEMENTED: {:0>4x?}", self.opcode);
+                    },
+                    0x001E => {
+                        println!("ADD V{} TO I", x);
+                        self.i += vx as u32;
+                    },
+                    0x0029 => {
+                        panic!("NOT IMPLEMENTED: {:0>4x?}", self.opcode);
+                    },
+                    0x0033 => {
+                        panic!("NOT IMPLEMENTED: {:0>4x?}", self.opcode);
+                    },
+                    0x0055 => {
+                        panic!("NOT IMPLEMENTED: {:0>4x?}", self.opcode);
+                    },
+                    0x0065 => {
+                        panic!("NOT IMPLEMENTED: {:0>4x?}", self.opcode);
+                    },
+                    _ =>      {
+                        panic!("UNKNOWN OPCODE: {:0>4x?}", self.opcode);
+                    }
+                }
+
+                self.pc += 2;
             },
             _      => {
                 // Cannot happen but for some reason rustc is complaining
