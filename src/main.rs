@@ -9,7 +9,7 @@ mod chip;
 const ERROR_INVALID_ARGUMENTS: i32 = 0x0001;
 const ERROR_GAME_LOADING_FAILED: i32 = 0x0002;
 
-const FRAME_PER_SECONDS: f32 = 30.0;
+const FRAME_PER_SECONDS: f32 = 60.0;
 const MILLISECONDS_PER_FRAME: f32 = 1000.0 / FRAME_PER_SECONDS;
 
 fn display_usage_and_exit() {
