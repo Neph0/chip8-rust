@@ -51,9 +51,9 @@ fn main() {
         }
 
         let timer_end = time::SystemTime::now();
-        let loop_time = timer_end.duration_since(timer_start).unwrap();
-        if loop_time < duration_per_frame {
-            thread::sleep(duration_per_frame - loop_time);
-        }
+        let _loop_time = timer_end.duration_since(timer_start).unwrap();
+        //if loop_time < duration_per_frame {
+        //    thread::sleep(duration_per_frame - loop_time);
+        //}
     }
 }

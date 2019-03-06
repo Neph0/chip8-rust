@@ -62,12 +62,14 @@ impl Chip {
         let mut f = File::open(path)?;
         f.read(&mut buffer)?;
         self.memory[(APPLICATION_MEMORY_LOCATION as usize)..].clone_from_slice(&buffer);
+        println!("Game {} properly loaded.", path);
         Ok(())
     }
 
     pub fn emulate_cycle(&mut self) {
         // Fetch opcode
         self.opcode = (self.memory[self.pc] as u16) << 8 | self.memory[self.pc + 1] as u16;
+        print!("[{:0>4x?}] INSTRUCTION: {:0>4x?}: ", self.pc, self.opcode);
         
         // Decode opcode
         match self.opcode & 0xF000 {
@@ -79,44 +81,78 @@ impl Chip {
                 match self.opcode & 0x0FFF {
                     0x00E0 => {
                         // TODO: Clear the screen
+                        println!("NOT_IMPLEMENTED: SCREEN_CLEAR");
+                        self.pc += 2;
                     },
                     0x00EE => {
-                        // TODO: Return from subroutine
+                        println!("RETURNING FROM SUBROUTINE TO {:0>4x?}", self.stack[self.sp - 1]);
+                        self.stack[self.sp] = 0;
+                        self.sp -= 1;
+                        self.pc = self.stack[self.sp];
                     },
                     _      => {
-                        // TODO: Call RCA 1802 program at address NNN
+                        println!("RCA 1802 calls are not supported");
+                        self.pc += 2;
                     }
                 }
             },
             // 0x1NNN: Jump to NNN
             0x1000 => {
-                println!("TODO")
+                println!("JUMP TO {:0>4x?}", self.opcode & 0x0FFF);
+                self.pc = (self.opcode & 0x0FFF).into();
             },
             // 0x2NNN: Call subroutine at NNN
             0x2000 => {
-                self.stack[self.sp] = self.pc;
+                println!("CALL SUBROUTINE AT {:x?}", self.opcode & 0xFFF);
+                self.stack[self.sp] = self.pc + 2;
                 self.sp += 1;
                 self.pc = (self.opcode & 0x0FFF).into();
             },
             // 0x3XNN: Skip the next instruction if VX equals NN
             0x3000 => {
-                println!("TODO")
+                let x = (self.opcode as usize & 0x0F00) >> 8;
+                let vx = self.v[x];
+                let nn = self.opcode as u8 & 0x00FF;
+                println!("SKIP NEXT INSTRUCTION IF V{:x?} == {:x?}", x, nn);
+                if vx == nn {
+                    self.pc += 4;
+                } else {
+                    self.pc += 2;
+                }
             },
             // 0x4XNN: Skip the next instruction if VX doesn't equal NN
             0x4000 => {
-                // TODO
+                let vx = self.v[(self.opcode as usize & 0x0F00) >> 8];
+                let nn = self.opcode as u8 & 0x00FF;
+                println!();
+                if vx == nn {
+                    self.pc += 4;
+                }
             },
             // 0x5XY0: Skip the next instruction if VX equals VY
             0x5000 => {
-                // TODO
+                let vx = self.v[(self.opcode as usize & 0x0F00) >> 8];
+                let vy = self.v[(self.opcode as usize & 0x00F0) >> 4];
+                println!();
+                if vx == vy {
+                    self.pc += 4;
+                }
             },
             // 0x6XNN: Set VX to NN
             0x6000 => {
-                // TODO
+                let nn = self.opcode as u8 & 0x00FF;
+                println!("SET V{} TO {:x?}", (self.opcode as usize & 0x0F00) >> 8, nn);
+                self.v[(self.opcode as usize & 0x0F00) >> 8] = nn;
+                self.pc += 2;
             },
             // 0x7XNN: Add NN to VX (carry flag is not changed)
             0x7000 => {
-                // TODO
+                let nn = self.opcode as u8 & 0x00FF;
+                let x = (self.opcode as usize & 0x0F00) >> 8;
+                println!("ADD {:x?} TO V{:x?} = {:x?}",
+                         nn, x, self.v[x] as u8 + nn);
+                self.v[x] += nn;
+                self.pc += 2;
             },
             // 0x8--- family: Arithmetics
             // - 0x8XY0: Set VX to the value of VY
@@ -129,53 +165,78 @@ impl Chip {
             // - 0x8XY7: Set VX to VY minus VX (VF is set to 0 if there is a borrow, else 1)
             // - 0x8XYE: Store the MSB of VX in VF and then shift VX left by 1
             0x8000 => {
-                let vx = self.v[(self.opcode as usize & 0x0F00) >> 8];
-                let vy = self.v[(self.opcode as usize & 0x00F0) >> 4];
+                let x = (self.opcode as usize & 0x0F00) >> 8;
+                let y = (self.opcode as usize & 0x00F0) >> 4;
+                let vx = self.v[x];
+                let vy = self.v[y];
                 match self.opcode & 0x000F {
                     0x0000 => {
                         // TODO
+                        println!("TODO: 0x000");
                     },
                     0x0001 => {
                         // TODO
+                        println!("TODO: 0x001");
                     },
                     0x0002 => {
                         // TODO
+                        println!("TODO: 0x002");
                     },
                     0x0003 => {
                         // TODO
+                        println!("TODO: 0x003");
                     },
                     0x0004 => {
+                        println!("ADDITION: V{} = V{} + V{} = {}",
+                                 x, x, y, self.v[x] + vy);
                         if vy > (0xFF - vx) {
                             self.v[0xF] = 1;
                         } else {
                             self.v[0xF] = 0;
                         }
-                        self.v[vx as usize] += self.v[vy as usize];
+                        self.v[x] += vy;
                         self.pc += 2;
                     },
                     0x0005 => {
                         // TODO
+                        println!("TODO: 0x005");
                     },
                     0x0006 => {
                         // TODO
+                        println!("TODO: 0x006");
                     },
                     0x0007 => {
                         // TODO
+                        println!("TODO: 0x007");
                     },
                     0x000E => {
                         // TODO
+                        println!("TODO: 0x00E");
                     },
                     _      => {
                         // TODO
+                        println!("TODO: 0x___");
                     }
                 }
+
+                self.pc += 2;
             },
             // 0x9XY0: Skip the next instruction if VX doesn't equal VY
             0x9000 => {
                 // TODO
+                let x = (self.opcode as usize & 0x0F00) >> 8;
+                let y = (self.opcode as usize & 0x00F0) >> 4;
+                let vx = self.v[x];
+                let vy = self.v[y];
+                if vx != vy {
+                    self.pc += 4;
+                } else {
+                    self.pc += 2;
+                }
             },
             // 0xANNN: Set I to the address NNN
             0xA000 => {
+                println!("SET I TO {:x?}", self.opcode & 0x0FFF);
                 self.i = (self.opcode & 0x0FFF).into();
                 self.pc += 2;
             },
@@ -194,6 +255,19 @@ impl Chip {
             //   unset when the sprite is drawn, and to 0 if that doesn't happen
             0xD000 => {
                 // TODO
+                let x = (self.opcode as usize & 0x0F00) >> 8;
+                let y = (self.opcode as usize & 0x00F0) >> 4;
+                let vx = self.v[x] as usize;
+                let vy = self.v[y] as usize;
+                let n = (self.opcode as usize & 0x000F) >> 0;
+                println!("DRAW SPRITE (V{} = {}, V{} = {}), HEIGHT {})", x, vx, y, vy, n);
+                for i in 0..n {
+                    for j in 0..8 {
+                        self.graphics[vx * (vy + i) + j] = 1;
+                    }
+                }
+                self.draw_flag = 1;
+                self.pc += 2;
             },
             // 0xE--- family: Input conditionals
             // - 0xEX9E: Skip the next instruction if the key stored in VX is pressed
