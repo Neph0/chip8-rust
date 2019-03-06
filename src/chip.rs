@@ -157,8 +157,7 @@ impl Chip {
                 let nn = self.opcode as u8 & 0x00FF;
                 let x = (self.opcode as usize & 0x0F00) >> 8;
                 // Ignore overflows
-                println!("ADD {:x?} TO V{:x?} = {:x?}",
-                         nn, x, self.v[x].wrapping_add(nn));
+                println!("ADD {} TO V{} ({}) = {}", nn, x, self.v[x], self.v[x].wrapping_add(nn));
                 self.v[x] = self.v[x].wrapping_add(nn);
                 self.pc += 2;
             },
@@ -277,10 +276,18 @@ impl Chip {
                 let vy = self.v[y] as usize;
                 let n = (self.opcode as usize & 0x000F) >> 0;
                 println!("DRAW SPRITE (V{} = {}, V{} = {}), HEIGHT {})", x, vx, y, vy, n);
+                let mut flipped = false;
                 for i in 0..n {
                     for j in 0..8 {
-                        self.graphics[vx * (vy + i) + j] = 1;
+                        let pos = vx * (vy + i) + j;
+                        if self.graphics[pos] == 0 && self.memory[self.i as usize + j] == 1 {
+                            flipped = true;
+                        }
+                        self.graphics[vx * (vy + i) + j] = self.memory[self.i as usize + j];
                     }
+                }
+                if flipped {
+                    self.v[0xf] = flipped.into();
                 }
                 self.draw_flag = 1;
                 self.pc += 2;

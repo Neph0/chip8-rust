@@ -44,6 +44,7 @@ fn main() {
         runtime_manager.handle_events(&mut chip);
         if chip.draw_flag != 0 {
             runtime_manager.draw_graphics(&chip.graphics);
+            chip.draw_flag = 0;
         }
 
         if chip.exit_flag == 1 {

@@ -6,7 +6,7 @@ use sfml::window;
 use sfml::graphics::{Color, RenderTarget};
 use sfml::window::{Event, Key};
 
-const PIXEL_DISPLAY_SIZE: u32 = 16;
+const PIXEL_DISPLAY_SIZE: u32 = 1;
 const _EVENT_TO_KEYPAD_INDEX: [Key; 16] = [
     Key::Num1, Key::Num2, Key::Num3, Key::Num4,
     Key::Q, Key::W, Key::E, Key::R,
