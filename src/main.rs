@@ -60,7 +60,7 @@ fn main() {
             }
 
             if chip.exit_flag == 1 {
-                break;
+                process::exit(0);
             }
 
             if chip.draw_flag != 0 {
