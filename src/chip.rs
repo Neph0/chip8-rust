@@ -107,12 +107,12 @@ impl Chip {
                     },
                     OPCODE_RETURN_FROM_SUBROUTINE => {
                         println!("RETURNING FROM SUBROUTINE TO {:0>4x?}", self.stack[self.sp - 1]);
-                        self.stack[self.sp] = 0;
                         self.sp -= 1;
                         self.pc = self.stack[self.sp];
+                        self.stack[self.sp] = 0;
                     },
                     _      => {
-                        println!("RCA 1802 calls are not supported");
+                        panic!("RCA 1802 calls are not supported");
                         self.pc += 2;
                     }
                 }
@@ -147,7 +147,7 @@ impl Chip {
                 let vx = self.v[x];
                 let nn = self.opcode as u8 & 0x00FF;
                 println!("SKIP NEXT INSTRUCTION IF V{} != {}", x, nn);
-                if vx == nn {
+                if vx != nn {
                     self.pc += 4;
                 } else {
                     self.pc += 2;
@@ -297,7 +297,7 @@ impl Chip {
                 for i in 0..n {
                     for j in 0..8 {
                         let pos = (vy + i) * SCREEN_WIDTH + vx + j;
-                        let bit = self.memory[self.i as usize + i * 8] >> j & 0x1;
+                        let bit = self.memory[self.i as usize + i] >> j & 0x1;
                         if self.graphics[pos] ^ bit == 0 {
                             self.v[0xf] = 1;
                         }
