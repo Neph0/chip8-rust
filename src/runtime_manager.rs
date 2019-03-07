@@ -93,21 +93,39 @@ impl RuntimeManager {
         // SFML sprites, 4 bytes per pixel: (r, g, b, a)
         let mut pixels = vec![0; (W * H * 4) as usize];
         let mut j = 0;
-        for i in 0..(W * H) as usize {
-            match screen_buffer[i] {
-                0 => { // BLACK
-                    pixels[j]     = 0;
-                    pixels[j + 1] = 0;
-                    pixels[j + 2] = 0;
-                },
-                _ => { // WHITE
-                    pixels[j]     = 255;
-                    pixels[j + 1] = 255;
-                    pixels[j + 2] = 255;
+        //for i in 0..(W * H) as usize {
+        //    match screen_buffer[i] {
+        //        0 => { // BLACK
+        //            pixels[j]     = 0;
+        //            pixels[j + 1] = 0;
+        //            pixels[j + 2] = 0;
+        //        },
+        //        _ => { // WHITE
+        //            pixels[j]     = 255;
+        //            pixels[j + 1] = 255;
+        //            pixels[j + 2] = 255;
+        //        }
+        //    }
+        //    pixels[j + 3] = 255;
+        //    j += 4;
+        //}
+        for y in 0..H as usize {
+            for x in 0..W as usize {
+                match screen_buffer[i] {
+                    0 => { // BLACK
+                        pixels[j]     = 0;
+                        pixels[j + 1] = 0;
+                        pixels[j + 2] = 0;
+                    },
+                    _ => { // WHITE
+                        pixels[j]     = 255;
+                        pixels[j + 1] = 255;
+                        pixels[j + 2] = 255;
+                    }
                 }
+                pixels[j + 3] = 255;
+                j += 4;
             }
-            pixels[j + 3] = 255;
-            j += 4;
         }
 
         let mut texture = graphics::Texture::new(W, H).unwrap();

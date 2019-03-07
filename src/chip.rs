@@ -216,21 +216,21 @@ impl Chip {
                     },
                     OPCODE_SET_VX_TO_VX_PLUS_VY => {
                         println!("ADDITION: V{} = V{} + V{} = {}",
-                                 x, x, y, self.v[x] + vy);
+                                 x, x, y, vx.wrapping_add(vy));
                         if vy > (0xFF - vx) {
                             self.v[0xF] = 1;
                         } else {
                             self.v[0xF] = 0;
                         }
-                        self.v[x] += vy;
+                        self.v[x] = vx.wrapping_add(vy);
                         self.pc += 2;
                     },
                     OPCODE_SUBSTRACT_VY_FROM_VX => {
                         println!("SUBSTRACTION: V{} = V{} - V{} = {}",
-                                 x, x, y, self.v[x] - vy);
+                                 x, x, y, vx.wrapping_sub(vy));
                         if vy > vx { self.v[0xf] = 0; }
                         else { self.v[0xf] = 1; }
-                        self.v[x] -= vy;
+                        self.v[x] = vx.wrapping_sub(vy);
                     },
                     OPCODE_STORE_LSB_OF_VX_IN_VF_AND_RSHIFT_VX => {
                         panic!("TODO: 0x006");
@@ -263,7 +263,7 @@ impl Chip {
             },
             // 0xANNN: Set I to the address NNN
             OPCODE_SET_I_TO_NNN => {
-                println!("SET I TO {:x?}", self.opcode & 0x0FFF);
+                println!("SET I TO {:0>4x?}", self.opcode & 0x0FFF);
                 self.i = (self.opcode & 0x0FFF).into();
                 self.pc += 2;
             },
@@ -383,7 +383,11 @@ impl Chip {
                         self.i = (vx * FONTSET_ELEMENT_SIZE as u8).into();
                     },
                     OPCODE_STORE_VX_AS_DIGITS_AT_I => {
-                        println!("STORE DECIMAL OF V{} AT {}", x, self.i);
+                        let digit_hundred: u8 = vx / 100;
+                        let digit_decimal: u8 = (vx % 100) / 10;
+                        let digit_unit: u8 = vx % 10;
+                        println!("STORE DECIMAL OF V{} ({}) AT {}: {} {} {}",
+                            x, vx, self.i, digit_hundred, digit_decimal, digit_unit);
                         self.memory[self.i as usize + 0] = vx / 100;
                         self.memory[self.i as usize + 1] = (vx % 100) / 10;
                         self.memory[self.i as usize + 2] = vx % 10;

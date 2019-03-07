@@ -41,6 +41,7 @@ fn main() {
 
     let duration_per_frame: time::Duration = time::Duration::
                 from_millis(MILLISECONDS_PER_FRAME.trunc() as u64);
+    runtime_manager.draw_graphics(&chip.graphics);
 
     loop {
         let timer_start = time::SystemTime::now();
