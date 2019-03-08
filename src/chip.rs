@@ -301,7 +301,7 @@ impl Chip {
                 for i in 0..n {
                     for j in 0..8 {
                         let mut pos = (vy + i) * SCREEN_WIDTH + vx + j;
-                        if pos >= SCREEN_WIDTH * SCREEN_HEIGHT { pos -= SCREEN_WIDTH * SCREEN_HEIGHT; }
+                        if pos >= SCREEN_WIDTH * SCREEN_HEIGHT { pos %= SCREEN_WIDTH * SCREEN_HEIGHT; }
                         let bit = self.memory[self.i as usize + i] >> (7 - j) & 0x1;
                         if self.graphics[pos] ^ bit == 0 {
                             self.v[0xf] = 1;
