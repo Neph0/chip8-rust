@@ -48,7 +48,6 @@ fn main() {
 
         loop {
             chip.emulate_cycle();
-
             runtime_manager.handle_events(&mut chip);
 
             if chip.clear_flag != 0 {

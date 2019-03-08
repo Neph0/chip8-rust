@@ -35,16 +35,11 @@ impl RuntimeManager {
         }
     }
 
-    pub fn handle_events(&mut self, chip: &mut super::chip::Chip)
+    pub fn handle_events(&mut self, chip: &mut super::chip::Chip,)
     {
         while let Some(event) = self.window.poll_event() {
             match event {
-                Event::Closed
-                | Event::KeyPressed {
-                    code: Key::Escape, ..
-                } => {
-                    chip.exit_flag = 1;
-                },
+                Event::Closed | Event::KeyPressed { code: Key::Escape, ..  } => { chip.exit_flag = 1; },
                 // What the fuck is this SHIT?
                 Event::KeyPressed  { code: Key::Num1, .. } => { chip.set_key(0,   true); }
                 Event::KeyPressed  { code: Key::Num2, .. } => { chip.set_key(1,   true); }
@@ -92,7 +87,7 @@ impl RuntimeManager {
         const H: u32 = super::chip::SCREEN_HEIGHT as u32;
         // SFML sprites, 4 bytes per pixel: (r, g, b, a)
         let mut pixels = vec![0; (W * H * 4) as usize];
-        let mut j = 0;
+        //let mut j = 0;
         //for i in 0..(W * H) as usize {
         //    match screen_buffer[i] {
         //        0 => { // BLACK
@@ -109,22 +104,23 @@ impl RuntimeManager {
         //    pixels[j + 3] = 255;
         //    j += 4;
         //}
+
         for y in 0..H as usize {
             for x in 0..W as usize {
-                match screen_buffer[i] {
+                let pos = ((y * super::chip::SCREEN_WIDTH) + x) * 4;
+                match screen_buffer[y * super::chip::SCREEN_WIDTH + x] {
                     0 => { // BLACK
-                        pixels[j]     = 0;
-                        pixels[j + 1] = 0;
-                        pixels[j + 2] = 0;
+                        pixels[pos]     = 0;
+                        pixels[pos + 1] = 0;
+                        pixels[pos + 2] = 0;
                     },
                     _ => { // WHITE
-                        pixels[j]     = 255;
-                        pixels[j + 1] = 255;
-                        pixels[j + 2] = 255;
+                        pixels[pos]     = 255;
+                        pixels[pos + 1] = 255;
+                        pixels[pos + 2] = 255;
                     }
                 }
-                pixels[j + 3] = 255;
-                j += 4;
+                pixels[pos + 3] = 255;
             }
         }
 

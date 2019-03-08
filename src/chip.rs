@@ -48,6 +48,7 @@ pub struct Chip {
     pub draw_flag: u16,                                 // Draw flag
     pub exit_flag: u16,                                 // Exit flag
     pub clear_flag: u16,                                // Clear screen flag
+    pub input_flag: u16,                                // Wait for input
 }
 
 impl Chip {
@@ -67,6 +68,7 @@ impl Chip {
             draw_flag: 0,
             exit_flag: 0,
             clear_flag: 0,
+            input_flag: 0x10,
         };
 
         for iterator in 0..80 {
@@ -90,7 +92,9 @@ impl Chip {
     pub fn emulate_cycle(&mut self) {
         // Fetch opcode
         self.opcode = (self.memory[self.pc] as u16) << 8 | self.memory[self.pc + 1] as u16;
-        print!("[{:0>4x?}] INSTRUCTION: {:0>4x?}: ", self.pc, self.opcode);
+        if self.opcode & 0xF0FF != 0xF00A {
+            print!("[{:0>4x?}] INSTRUCTION: {:0>4x?}: ", self.pc, self.opcode);
+        }
         
         // Decode opcode
         match self.opcode & 0xF000 {
@@ -296,8 +300,9 @@ impl Chip {
                 self.v[0xf] = 0;
                 for i in 0..n {
                     for j in 0..8 {
-                        let pos = (vy + i) * SCREEN_WIDTH + vx + j;
-                        let bit = self.memory[self.i as usize + i] >> j & 0x1;
+                        let mut pos = (vy + i) * SCREEN_WIDTH + vx + j;
+                        if pos >= SCREEN_WIDTH * SCREEN_HEIGHT { pos -= SCREEN_WIDTH * SCREEN_HEIGHT; }
+                        let bit = self.memory[self.i as usize + i] >> (7 - j) & 0x1;
                         if self.graphics[pos] ^ bit == 0 {
                             self.v[0xf] = 1;
                         }
@@ -362,25 +367,39 @@ impl Chip {
                     OPCODE_SET_VX_TO_DELAY_TIMER => {
                         println!("SET V{} = DELAY_TIMER", x);
                         self.v[x] = self.delay_timer as u8;
+
+                        self.pc += 2;
                     },
                     OPCODE_WAIT_FOR_INPUT_AND_SET_TO_VX => {
-                        panic!("NOT IMPLEMENTED: {:0>4x?}", self.opcode);
+                        if self.input_flag > 0xf {
+                            print!("[{:0>4x?}] INSTRUCTION: {:0>4x?}: ", self.pc, self.opcode);
+                            println!("WAIT FOR INPUT AND SET TO V{:x?}", x);
+                        }
+                        self.input_flag = x as u16;
                     },
                     OPCODE_SET_DELAY_TIMER_TO_VX => {
                         println!("SET DELAY_TIMER TO V{}", x);
                         self.delay_timer = vx.into();
+
+                        self.pc += 2;
                     },
                     OPCODE_SET_SOUND_TIMER_TO_VX => {
                         println!("SET SOUND_TIMER TO V{}", x);
                         self.sound_timer = vx.into();
+
+                        self.pc += 2;
                     },
                     OPCODE_ADD_VX_TO_I => {
                         println!("ADD V{} TO I", x);
                         self.i += vx as u32;
+
+                        self.pc += 2;
                     },
                     OPCODE_SET_I_TO_SPRITE_IN_VX => {
                         println!("SET I TO LOCATION OF SPRITE IN V{}", x);
                         self.i = (vx * FONTSET_ELEMENT_SIZE as u8).into();
+
+                        self.pc += 2;
                     },
                     OPCODE_STORE_VX_AS_DIGITS_AT_I => {
                         let digit_hundred: u8 = vx / 100;
@@ -391,25 +410,29 @@ impl Chip {
                         self.memory[self.i as usize + 0] = vx / 100;
                         self.memory[self.i as usize + 1] = (vx % 100) / 10;
                         self.memory[self.i as usize + 2] = vx % 10;
+
+                        self.pc += 2;
                     },
                     OPCODE_STORE_REGISTERS_AT_I => {
                         println!("STORE REGISTERS AT {:x?}", self.i);
                         for i in 0x0..0xf {
                             self.memory[self.i as usize + i] = self.v[i];
                         }
+
+                        self.pc += 2;
                     },
                     OPCODE_RESTORE_REGISTERS_FROM_I => {
                         println!("RESTORE REGISTERS FROM {:x?}", self.i);
                         for i in 0x0..0xf {
                             self.v[i] = self.memory[self.i as usize + i];
                         }
+
+                        self.pc += 2;
                     },
                     _ =>      {
                         panic!("UNKNOWN OPCODE: {:0>4x?}", self.opcode);
                     }
                 }
-
-                self.pc += 2;
             }
             _ => {
                 panic!("UNKNOWN OPCODE: {:0>4x?}", self.opcode);
@@ -430,9 +453,14 @@ impl Chip {
         }
     }
 
-    // TODO
     pub fn set_key(&mut self, index: usize, state: bool) {
         println!("Setting key index {} to {}", index, state);
         self.key[index] = state;
+
+        if self.input_flag <= 0xf {
+            self.v[self.input_flag as usize] = index as u8;
+            self.input_flag = 0x10;
+            self.pc += 2;
+        }
     }
 }
