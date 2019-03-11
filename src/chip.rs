@@ -230,20 +230,28 @@ impl Chip {
                         self.pc += 2;
                     },
                     OPCODE_SUBSTRACT_VY_FROM_VX => {
-                        println!("SUBSTRACTION: V{} = V{} - V{} = {}",
+                        println!("SUBSTRACTION: V{:x?} = V{:x?} - V{:x?} = {}",
                                  x, x, y, vx.wrapping_sub(vy));
-                        if vy > vx { self.v[0xf] = 0; }
-                        else { self.v[0xf] = 1; }
+                        if vx > vy { self.v[0xf] = 1; }
+                        else { self.v[0xf] = 0; }
                         self.v[x] = vx.wrapping_sub(vy);
                     },
                     OPCODE_STORE_LSB_OF_VX_IN_VF_AND_RSHIFT_VX => {
-                        panic!("TODO: 0x006");
+                        println!("STORING LSB OF V{:x?} IN VF", x);
+                        self.v[0xf] = vx & 1;
+                        self.v[x] = vx >> 1;
                     },
                     OPCODE_SET_VX_TO_VY_MINUS_VX => {
-                        panic!("TODO: 0x007");
+                        println!("SUBSTRACTION: V{:x?} = V{:x?} - V{:x?} = {}",
+                                 x, y, x, vy.wrapping_sub(vx));
+                        if vy > vx { self.v[0xf] = 1; }
+                        else { self.v[0xf] = 0; }
+                        self.v[x] = vy.wrapping_sub(vx);
                     },
                     OPCODE_STORE_MSB_OF_VX_IN_VF_AND_LSHIFT_VX => {
-                        panic!("TODO: 0x00E");
+                        println!("STORING MSB OF V{:x?} in VF", x);
+                        self.v[0xf] = vx & 0x80;
+                        self.v[x] = vx << 1;
                     },
                     _      => {
                         panic!("UNKNOWN OPCODE: {:0>4x?}", self.opcode);
