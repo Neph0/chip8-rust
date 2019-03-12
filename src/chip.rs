@@ -105,15 +105,14 @@ impl Chip {
             FAMILY_MISCEALLENOUS => {
                 match self.opcode & 0x0FFF {
                     OPCODE_CLEAR_SCREEN => {
-                        // TODO: Clear the screen
+                        println!("CLEARING SCREEN");
                         self.clear_flag = 1;
                         self.pc += 2;
                     },
                     OPCODE_RETURN_FROM_SUBROUTINE => {
                         println!("RETURNING FROM SUBROUTINE TO {:0>4x?}", self.stack[self.sp - 1]);
-                        self.sp -= 1;
                         self.pc = self.stack[self.sp];
-                        self.stack[self.sp] = 0;
+                        self.sp -= 1;
                     },
                     _      => {
                         panic!("RCA 1802 calls are not supported");
@@ -129,8 +128,8 @@ impl Chip {
             // 0x2NNN: Call subroutine at NNN
             OPCODE_CALL_SUBROUTINE => {
                 println!("CALL SUBROUTINE AT {:x?}", self.opcode & 0xFFF);
-                self.stack[self.sp] = self.pc + 2;
                 self.sp += 1;
+                self.stack[self.sp] = self.pc + 2;
                 self.pc = (self.opcode & 0x0FFF).into();
             },
             // 0x3XNN: Skip the next instruction if VX equals NN
@@ -181,7 +180,6 @@ impl Chip {
             OPCODE_ADD_NN_TO_VX => {
                 let nn = self.opcode as u8 & 0x00FF;
                 let x = (self.opcode as usize & 0x0F00) >> 8;
-                // Ignore overflows
                 println!("ADD {} TO V{} ({}) = {}", nn, x, self.v[x], self.v[x].wrapping_add(nn));
                 self.v[x] = self.v[x].wrapping_add(nn);
                 self.pc += 2;
