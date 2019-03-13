@@ -133,6 +133,7 @@ impl RuntimeManager {
 
     pub fn clear_screen(&mut self)
     {
-        self.window.clear(&Color::rgb(0, 0, 0));
+        self.window.clear(&Color::BLACK);
+        self.window.display();
     }
 }

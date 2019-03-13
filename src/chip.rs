@@ -106,6 +106,7 @@ impl Chip {
                 match self.opcode & 0x0FFF {
                     OPCODE_CLEAR_SCREEN => {
                         println!("CLEARING SCREEN");
+                        self.graphics = [0; SCREEN_WIDTH * SCREEN_HEIGHT];
                         self.clear_flag = 1;
                         self.pc += 2;
                     },
