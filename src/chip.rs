@@ -128,7 +128,7 @@ impl Chip {
             },
             // 0x2NNN: Call subroutine at NNN
             OPCODE_CALL_SUBROUTINE => {
-                println!("CALL SUBROUTINE AT {:x?}", self.opcode & 0xFFF);
+                println!("CALL SUBROUTINE AT {:0>4x?}", self.opcode & 0xFFF);
                 self.sp += 1;
                 self.stack[self.sp] = self.pc + 2;
                 self.pc = (self.opcode & 0x0FFF).into();
@@ -138,7 +138,7 @@ impl Chip {
                 let x = (self.opcode as usize & 0x0F00) >> 8;
                 let vx = self.v[x];
                 let nn = self.opcode as u8 & 0x00FF;
-                println!("SKIP NEXT INSTRUCTION IF V{:x?} == {:x?}", x, nn);
+                println!("SKIP NEXT INSTRUCTION IF V{:x?} ({:x?}) == {:x?}", x, vx, nn);
                 if vx == nn {
                     self.pc += 4;
                 } else {
@@ -150,7 +150,7 @@ impl Chip {
                 let x  = (self.opcode as usize & 0x0F00) >> 8;
                 let vx = self.v[x];
                 let nn = self.opcode as u8 & 0x00FF;
-                println!("SKIP NEXT INSTRUCTION IF V{} != {}", x, nn);
+                println!("SKIP NEXT INSTRUCTION IF V{:x?} ({:x?}) != {:x?}", x, vx, nn);
                 if vx != nn {
                     self.pc += 4;
                 } else {
@@ -163,7 +163,7 @@ impl Chip {
                 let y = (self.opcode as usize & 0x00F0) >> 4;
                 let vx = self.v[x];
                 let vy = self.v[y];
-                println!("SKIP NEXT INSTRUCTION IF V{} == V{}", x, y);
+                println!("SKIP NEXT INSTRUCTION IF V{:x?} ({:x?}) == V{:x?} ({:x?})", x, vx, y, vy);
                 if vx == vy {
                     self.pc += 4;
                 } else {
@@ -172,9 +172,10 @@ impl Chip {
             },
             // 0x6XNN: Set VX to NN
             OPCODE_SET_VX_TO_NN => {
+                let x  = (self.opcode as usize & 0x0F00) >> 8;
                 let nn = self.opcode as u8 & 0x00FF;
-                println!("SET V{} TO {:x?}", (self.opcode as usize & 0x0F00) >> 8, nn);
-                self.v[(self.opcode as usize & 0x0F00) >> 8] = nn;
+                println!("SET V{:x?} ({:x?}) TO {:x?}", x, self.v[x], nn);
+                self.v[x] = nn;
                 self.pc += 2;
             },
             // 0x7XNN: Add NN to VX (carry flag is not changed)
@@ -202,24 +203,24 @@ impl Chip {
                 let vy = self.v[y];
                 match self.opcode & 0xF00F {
                     OPCODE_SET_VX_TO_VY => {
-                        println!("SET V{} to V{}", x, y);
+                        println!("SET V{:x?} ({:x?}) to V{:x?} ({:x?})", x, vx, y, vy);
                         self.v[x] = vy;
                     },
                     OPCODE_SET_VX_TO_VX_OR_VY => {
-                        println!("SET V{} to V{} | V{}", x, x, y);
+                        println!("SET V{:x?} ({:x?}) to V{:x?} ({:x?}) | V{:x?} ({:x?})", x, vx, x, vx, y, vy);
                         self.v[x] = vx | vy;
                     },
                     OPCODE_SET_VX_TO_VX_AND_VY => {
-                        println!("SET V{} to V{} & V{}", x, x, y);
+                        println!("SET V{:x?} ({:x?}) to V{:x?} ({:x?}) & V{:x?} ({:x?})", x, vx, x, vx, y, vy);
                         self.v[x] = vx & vy;
                     },
                     OPCODE_SET_VX_TO_VX_XOR_VY => {
-                        println!("SET V{} to V{} ^ V{}", x, x, y);
+                        println!("SET V{:x?} ({:x?}) to V{:x?} ({:x?}) ^ V{:x?} ({:x?})", x, vx, x, vx, y, vy);
                         self.v[x] = vx ^ vy;
                     },
                     OPCODE_SET_VX_TO_VX_PLUS_VY => {
-                        println!("ADDITION: V{} = V{} + V{} = {}",
-                                 x, x, y, vx.wrapping_add(vy));
+                        println!("ADDITION: V{:x?} = V{:x?} ({:x?}) + V{:x?} ({:x?}) = {:x?}",
+                                 x, x, vx, y, vy, vx.wrapping_add(vy));
                         if vy > (0xFF - vx) {
                             self.v[0xF] = 1;
                         } else {
@@ -229,26 +230,26 @@ impl Chip {
                         self.pc += 2;
                     },
                     OPCODE_SUBSTRACT_VY_FROM_VX => {
-                        println!("SUBSTRACTION: V{:x?} = V{:x?} - V{:x?} = {}",
+                        println!("SUBSTRACTION: V{:x?} = V{:x?} - V{:x?} = {:x?}",
                                  x, x, y, vx.wrapping_sub(vy));
                         if vx > vy { self.v[0xf] = 1; }
                         else { self.v[0xf] = 0; }
                         self.v[x] = vx.wrapping_sub(vy);
                     },
                     OPCODE_STORE_LSB_OF_VX_IN_VF_AND_RSHIFT_VX => {
-                        println!("STORING LSB OF V{:x?} IN VF", x);
+                        println!("STORING LSB OF V{:x?} ({:x?}) IN VF: {:x?}", x, vx, vx & 1);
                         self.v[0xf] = vx & 1;
                         self.v[x] = vx >> 1;
                     },
                     OPCODE_SET_VX_TO_VY_MINUS_VX => {
-                        println!("SUBSTRACTION: V{:x?} = V{:x?} - V{:x?} = {}",
+                        println!("SUBSTRACTION: V{:x?} = V{:x?} - V{:x?} = {:x?}",
                                  x, y, x, vy.wrapping_sub(vx));
                         if vy > vx { self.v[0xf] = 1; }
                         else { self.v[0xf] = 0; }
                         self.v[x] = vy.wrapping_sub(vx);
                     },
                     OPCODE_STORE_MSB_OF_VX_IN_VF_AND_LSHIFT_VX => {
-                        println!("STORING MSB OF V{:x?} in VF", x);
+                        println!("STORING MSB OF V{:x?} in VF: {:x?}", x, vx & 0x80);
                         self.v[0xf] = vx & 0x80;
                         self.v[x] = vx << 1;
                     },
@@ -280,14 +281,16 @@ impl Chip {
             },
             // 0xBNNN: Jump to the address NNN + V0
             OPCODE_JUMP_TO_NNN_PLUS_V0 =>  {
-                panic!("TODO: 0xBNNN");
+                let nnn = self.opcode as usize & 0x0FFF;
+                println!("JUMPING TO NNN ({:0>4x?}) PLUS V0 ({:x?})", nnn, self.v[0]);
+                self.pc = nnn + self.v[0] as usize;
             },
             // 0xCXNN: Set VX to the result of NN & rand()[0..255]
             OPCODE_SET_VX_TO_NN_AND_RAND => {
                 let r = rand::random::<u8>();
                 let x = (self.opcode as usize & 0x0F00) >> 8;
                 let nn = self.opcode as u8 & 0x00FF;
-                println!("SET V{} TO {} & {} = {}",
+                println!("RANDOM: SET V{:x?} TO {:x?} & {:x?} = {:x?}",
                          x, r, nn, r & nn);
                 self.v[x] = r & nn;
                 self.pc += 2;
@@ -302,7 +305,7 @@ impl Chip {
                 let vx = self.v[x] as usize;
                 let vy = self.v[y] as usize;
                 let n = (self.opcode as usize & 0x000F) >> 0;
-                println!("DRAW SPRITE (V{} = {}, V{} = {}), HEIGHT {})", x, vx, y, vy, n);
+                println!("DRAW SPRITE (V{:x?} = {}, V{:x?} = {}), HEIGHT {})", x, vx, y, vy, n);
 
                 self.v[0xf] = 0;
                 for i in 0..n {
@@ -329,13 +332,13 @@ impl Chip {
 
                 match self.opcode & 0xF0FF {
                     OPCODE_SKIP_IF_VX_IS_PRESSED => {
-                        println!("SKIP NEXT INSTRUCTION IF KEY {} IS PRESSED", vx);
+                        println!("SKIP NEXT INSTRUCTION IF KEY {:x?} IS PRESSED", vx);
                         if self.key[vx] == true {
                             self.pc += 2;
                         }
                     },
                     OPCODE_SKIP_IF_VX_IS_NOT_PRESSED => {
-                        println!("SKIP NEXT INSTRUCTION IF KEY {} IS NOT PRESSED", vx);
+                        println!("SKIP NEXT INSTRUCTION IF KEY {:x?} IS NOT PRESSED", vx);
                         if self.key[vx] == false {
                             self.pc += 2;
                         }
@@ -372,7 +375,7 @@ impl Chip {
 
                 match self.opcode & 0xF0FF {
                     OPCODE_SET_VX_TO_DELAY_TIMER => {
-                        println!("SET V{} = DELAY_TIMER", x);
+                        println!("SET V{:x?} TO DELAY_TIMER", x);
                         self.v[x] = self.delay_timer as u8;
 
                         self.pc += 2;
@@ -385,25 +388,25 @@ impl Chip {
                         self.input_flag = x as u16;
                     },
                     OPCODE_SET_DELAY_TIMER_TO_VX => {
-                        println!("SET DELAY_TIMER TO V{}", x);
+                        println!("SET DELAY_TIMER TO V{:x?}", x);
                         self.delay_timer = vx.into();
 
                         self.pc += 2;
                     },
                     OPCODE_SET_SOUND_TIMER_TO_VX => {
-                        println!("SET SOUND_TIMER TO V{}", x);
+                        println!("SET SOUND_TIMER TO V{:x?}", x);
                         self.sound_timer = vx.into();
 
                         self.pc += 2;
                     },
                     OPCODE_ADD_VX_TO_I => {
-                        println!("ADD V{} TO I", x);
+                        println!("SET I TO I ({:x?}) + V{:x?} ({:x?})", self.i, x, vx);
                         self.i += vx as u32;
 
                         self.pc += 2;
                     },
                     OPCODE_SET_I_TO_SPRITE_IN_VX => {
-                        println!("SET I TO LOCATION OF SPRITE IN V{}", x);
+                        println!("SET I TO LOCATION OF SPRITE IN V{:x?} ({:x?})", x, vx);
                         self.i = (vx * FONTSET_ELEMENT_SIZE as u8).into();
 
                         self.pc += 2;
@@ -412,7 +415,7 @@ impl Chip {
                         let digit_hundred: u8 = vx / 100;
                         let digit_decimal: u8 = (vx % 100) / 10;
                         let digit_unit: u8 = vx % 10;
-                        println!("STORE DECIMAL OF V{} ({}) AT {}: {} {} {}",
+                        println!("STORE DECIMAL OF V{:x?} ({:x?}) AT {:x?}: {} {} {}",
                             x, vx, self.i, digit_hundred, digit_decimal, digit_unit);
                         self.memory[self.i as usize + 0] = vx / 100;
                         self.memory[self.i as usize + 1] = (vx % 100) / 10;
@@ -461,7 +464,6 @@ impl Chip {
     }
 
     pub fn set_key(&mut self, index: usize, state: bool) {
-        println!("Setting key index {} to {}", index, state);
         self.key[index] = state;
 
         if self.input_flag <= 0xf {
