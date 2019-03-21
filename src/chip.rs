@@ -338,7 +338,7 @@ impl Chip {
                         }
                     },
                     OPCODE_SKIP_IF_VX_IS_NOT_PRESSED => {
-                        println!("SKIP NEXT INSTRUCTION IF KEY {:x?} IS NOT PRESSED", vx);
+                        println!("SKIP NEXT INSTRUCTION IF KEY V{:x} ({:x?}) IS NOT PRESSED", x, vx);
                         if self.key[vx] == false {
                             self.pc += 2;
                         }
@@ -425,18 +425,19 @@ impl Chip {
                     },
                     OPCODE_STORE_REGISTERS_AT_I => {
                         println!("STORE REGISTERS AT {:x?}", self.i);
-                        for i in 0x0..0xf {
+                        for i in 0x0..(x + 1) as usize {
                             self.memory[self.i as usize + i] = self.v[i];
                         }
-
+                        self.i = self.i + x as u32 + 1;
                         self.pc += 2;
                     },
                     OPCODE_RESTORE_REGISTERS_FROM_I => {
                         println!("RESTORE REGISTERS FROM {:x?}", self.i);
-                        for i in 0x0..0xf {
+                        for i in 0x0..(x + 1) as usize {
                             self.v[i] = self.memory[self.i as usize + i];
                         }
 
+                        self.i = self.i + x as u32 + 1;
                         self.pc += 2;
                     },
                     _ =>      {
