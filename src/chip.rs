@@ -428,7 +428,7 @@ impl Chip {
                         for i in 0x0..(x + 1) as usize {
                             self.memory[self.i as usize + i] = self.v[i];
                         }
-                        self.i = self.i + x as u32 + 1;
+
                         self.pc += 2;
                     },
                     OPCODE_RESTORE_REGISTERS_FROM_I => {
@@ -437,7 +437,6 @@ impl Chip {
                             self.v[i] = self.memory[self.i as usize + i];
                         }
 
-                        self.i = self.i + x as u32 + 1;
                         self.pc += 2;
                     },
                     _ =>      {
