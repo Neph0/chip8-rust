@@ -307,18 +307,18 @@ impl Chip {
                 let n = (self.opcode as usize & 0x000F) >> 0;
                 println!("DRAW SPRITE (V{:x?} = {}, V{:x?} = {}), HEIGHT {})", x, vx, y, vy, n);
 
-                self.v[0xf] = 0;
+                let mut flipped = false;
                 for i in 0..n {
                     for j in 0..8 {
                         let mut pos = (vy + i) * SCREEN_WIDTH + vx + j;
                         if pos >= SCREEN_WIDTH * SCREEN_HEIGHT { pos %= SCREEN_WIDTH * SCREEN_HEIGHT; }
                         let bit = self.memory[self.i as usize + i] >> (7 - j) & 0x1;
-                        if self.graphics[pos] ^ bit == 0 {
-                            self.v[0xf] = 1;
-                        }
+                        if self.graphics[pos] == 1 && bit == 1 { flipped = true; self.v[0xf] = 1; }
                         self.graphics[pos] ^= bit;
                     }
                 }
+
+                if !flipped { self.v[0xf] = 0; }
 
                 self.draw_flag = 1;
                 self.pc += 2;

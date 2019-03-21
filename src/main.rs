@@ -10,7 +10,7 @@ mod opcodes;
 const ERROR_INVALID_ARGUMENTS: i32 = 0x0001;
 const ERROR_GAME_LOADING_FAILED: i32 = 0x0002;
 
-const FRAME_PER_SECONDS: f32 = 60.0;
+const FRAME_PER_SECONDS: f32 = 10.0;
 const MILLISECONDS_PER_FRAME: f32 = 1000.0 / FRAME_PER_SECONDS;
 
 const REAL_WINDOW_WIDTH: u32 = 640;
@@ -52,7 +52,6 @@ fn main() {
 
             if chip.clear_flag != 0 {
                 runtime_manager.clear_screen();
-                chip.clear_flag = 0;
             }
 
             if chip.draw_flag != 0 {
@@ -63,13 +62,14 @@ fn main() {
                 process::exit(0);
             }
 
-            if chip.draw_flag != 0 {
+            if chip.draw_flag != 0 || chip.clear_flag != 0 {
                 let timer_end = time::SystemTime::now();
                 let loop_time = timer_end.duration_since(timer_start).unwrap();
                 if loop_time < duration_per_frame {
                     println!("[0000] SLEEPING   : {:?}", duration_per_frame - loop_time);
                     thread::sleep(duration_per_frame - loop_time);
                     chip.draw_flag = 0;
+                    chip.clear_flag = 0;
                 }
                 else {
                     println!("Loop was too slow: {:?}", loop_time - duration_per_frame);
