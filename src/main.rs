@@ -67,7 +67,7 @@ fn main() {
                 let timer_end = time::SystemTime::now();
                 let loop_time = timer_end.duration_since(timer_start).unwrap();
                 if loop_time < duration_per_frame {
-                    println!("Sleeping for {:?}", duration_per_frame - loop_time);
+                    println!("[0000] SLEEPING   : {:?}", duration_per_frame - loop_time);
                     thread::sleep(duration_per_frame - loop_time);
                     chip.draw_flag = 0;
                 }
